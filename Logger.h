@@ -23,13 +23,19 @@ enum class StorageType
 
 class Logger
 {
+     Logger();
+     void configure();
+     void setStorage(string storageType);
+     void setLogLevel(string level);
+     void setLogFilePath(string filepath);
+     static void initSingleLogger();
 public:
     Logger(const Logger&) = delete;
     Logger& operator= (const Logger&) = delete;
-    Logger(Logger&& other);
-    Logger& operator=(Logger&& other);
-    void configure();
-    static Logger* getInstance(std::string fileName);
+    Logger(Logger&& other)= delete;
+    Logger& operator=(Logger&& other) = delete;
+    static Logger* getInstance();
+
 
     ~Logger()
     {
@@ -37,14 +43,11 @@ public:
     }
 
     void Write(std::string content);
-    void setStorage(StorageType storageType) { this->mStorage = storageType; }
-    void setLogLevel(LogLevel level) { this->mLevel = level; }
-    //void setLogFile(string filepath) { this->mLogFileName = filepath; }
-
 private:
+
+    static std::once_flag initInstanceFlag;
     static Logger* m_pInstance;
-    Logger(std::string fileName);
-    Logger() = default;
+    string mFilepath;
     ofstream mLogFileName;
     mutex mMutex;
     StorageType mStorage;
