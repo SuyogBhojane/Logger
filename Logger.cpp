@@ -3,25 +3,22 @@
 #include <mutex>
 
 Logger* Logger::m_pInstance = nullptr;
-Logger::Logger(std::string fileName)
+once_flag Logger::initInstanceFlag;
+
+Logger::Logger()
 {
     configure();
-    mStorage = StorageType::FILE;
     if (mStorage == StorageType::FILE)
     {
-        mLogFileName.open(fileName);
+        mLogFileName.open(mFilepath);
 
         if (mLogFileName.fail())
         {
-            throw std::iostream::failure("Cannot open file: " + fileName);
+            throw std::iostream::failure("Cannot open file: " + mFilepath);
         }
     }
-    else
-    {
-        cout << "Storage Type not implemented" << endl;
-    }
 }
-
+/*
 Logger& Logger::operator=(Logger&& other)
 {
     mLogFileName.close();
@@ -33,29 +30,57 @@ Logger::Logger(Logger&& other)
 {
     mLogFileName.close();
     mLogFileName = move(other.mLogFileName);
-}
 
+}
+*/
 void Logger::Write(std::string content)
 { 
-    std::lock_guard<mutex> lock(mMutex);
+    lock_guard<mutex> lock(mMutex);
 
-    std::time_t now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    time_t now = chrono::system_clock::to_time_t(chrono::system_clock::now());
     char timestamp[26];
     ctime_s(timestamp, sizeof timestamp, &now);
 
-    std::string timestampWithoutEndl(timestamp);
+    string timestampWithoutEndl(timestamp);
     timestampWithoutEndl = timestampWithoutEndl.substr(0, 24);
 
     mLogFileName << timestampWithoutEndl << ": " << content << std::endl;
 }
 
-Logger * Logger::getInstance(std::string fileName)
+Logger* Logger::getInstance()
 {
-    if (!m_pInstance)
-    {
-        m_pInstance = new Logger(fileName);
-    }
+    call_once(initInstanceFlag, &Logger::initSingleLogger);
+
     return m_pInstance;
+}
+void Logger::initSingleLogger() {
+    m_pInstance = new Logger();
+}
+void Logger::setStorage(string storageType)
+{
+    if (storageType == "CONSOLE")
+        mStorage = StorageType::CONSOLE;
+    else if (storageType == "FILE")
+        mStorage = StorageType::FILE;
+    else
+        mStorage = StorageType::FILE;
+}
+void Logger::setLogLevel(string level)
+{
+    if (level == "INFO" )
+        mLevel = LogLevel::INFO;
+    else if (level == "DEBUG" )
+        mLevel = LogLevel::DEBUG;
+    else if (level == "WARN" )
+        mLevel = LogLevel::WARN;
+    else if (level == "ERROR" )
+        mLevel = LogLevel::ERROR;
+    else
+        mLevel = LogLevel::INFO;
+}
+void Logger::setLogFilePath(string filepath)
+{
+    mFilepath = filepath;
 }
 void Logger::configure()
 {
@@ -63,52 +88,16 @@ void Logger::configure()
 
     config->parseFile();
 
-    LogLevel logLevel;
-    StorageType logType;
+    string logLevel_str("INFO");
+    string logType_str("FILE");
+    string logFile_path("");
 
-    string logLevel_str;
-    string logType_str;
+    config->getValue("logFile_path", logFile_path);
+    setLogFilePath(logFile_path);
 
-    // Configuring the log level
-    if (config->getValue("log_level", logLevel_str))
-    {
-        if (logLevel_str == "INFO" || logLevel_str == "1")
-            logLevel = LogLevel::INFO;
+    config->getValue("log_level", logLevel_str);
+    setLogLevel(logLevel_str);
 
-        else if (logLevel_str == "DEBUG" || logLevel_str == "2")
-            logLevel = LogLevel::DEBUG;
-
-        else if (logLevel_str == "WARN" || logLevel_str == "3")
-            logLevel = LogLevel::WARN;
-
-        else if (logLevel_str == "ERROR" || logLevel_str == "4")
-            logLevel = LogLevel::ERROR;
-        else
-            logLevel = LogLevel::INFO;
-    }
-
-    else
-        logLevel = LogLevel::INFO;
-
-
-    // Configuring the log type
-    if (config->getValue("log_type", logType_str))
-    {
-        if (logType_str == "CONSOLE" || logType_str == "1")
-            logType = StorageType::CONSOLE;
-
-        else if (logType_str == "FILE" || logType_str == "2")
-            logType = StorageType::FILE;
-
-        else
-            logType = StorageType::FILE;
-    }
-
-    else
-        logType = StorageType::FILE;
-
-    // Setting the parameters
-    mLevel = logLevel;
-    mStorage= logType;
-
+    config->getValue("storage_type", logType_str);
+    setStorage(logType_str);
 }

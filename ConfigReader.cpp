@@ -5,25 +5,28 @@
 #include <fstream>
 #include <algorithm>
 
+
 using namespace std;
 
 ConfigReader::ConfigReader() {}
 ConfigReader::~ConfigReader() {};
 
 ConfigReader* ConfigReader::m_pInstance = nullptr;
+once_flag ConfigReader::initSingleConfigFlag;
 
 ConfigReader* ConfigReader::getInstance()
 {
-    if (!m_pInstance)
-    {
-        m_pInstance = new ConfigReader();
-    }
+    call_once(initSingleConfigFlag, &ConfigReader::initSingleConfig);
+
     return m_pInstance;
 }
+void ConfigReader::initSingleConfig() {
+    m_pInstance = new ConfigReader();
+}
 
-bool ConfigReader::getValue(std::string tag, std::string& value)
+bool ConfigReader::getValue(string tag, string& value)
 {
-    map<std::string, std::string>::iterator it;
+    map<string, string>::iterator it;
     it = m_ConfigSettingMap.find(tag);
     if (it != m_ConfigSettingMap.end())
     {
@@ -65,13 +68,13 @@ bool ConfigReader::parseFile(string fileName)
         if (tag.empty() || value.empty())
             continue;
 
-        std::map<std::string, std::string>::iterator itr = m_ConfigSettingMap.find(tag);
+        map<string, string>::iterator itr = m_ConfigSettingMap.find(tag);
         if (itr != m_ConfigSettingMap.end())
         {
             m_ConfigSettingMap.erase(tag);
         }
 
-        m_ConfigSettingMap.insert(std::pair<string, string>(tag, value));
+        m_ConfigSettingMap.insert(pair<string, string>(tag, value));
     }
     return true;
 }
