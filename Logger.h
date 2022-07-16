@@ -35,6 +35,7 @@ public:
     Logger(Logger&& other)= delete;
     Logger& operator=(Logger&& other) = delete;
     static Logger* getInstance();
+    string logLevel_to_string(LogLevel t);
 
 
     ~Logger()

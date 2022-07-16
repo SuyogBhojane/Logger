@@ -43,8 +43,8 @@ void Logger::Write(std::string content)
 
     string timestampWithoutEndl(timestamp);
     timestampWithoutEndl = timestampWithoutEndl.substr(0, 24);
-
-    mLogFileName << timestampWithoutEndl << ": " << content << std::endl;
+    
+    mLogFileName << timestampWithoutEndl << ": " << logLevel_to_string(mLevel) << content << std::endl;
 }
 
 Logger* Logger::getInstance()
@@ -100,4 +100,19 @@ void Logger::configure()
 
     config->getValue("storage_type", logType_str);
     setStorage(logType_str);
+}
+
+string Logger::logLevel_to_string(LogLevel t) {
+    switch (t) {
+    case LogLevel::INFO:
+        return " [INFO] ";
+    case  LogLevel::DEBUG:
+        return " [DEBUG] ";
+    case  LogLevel::WARN:
+        return " [WARN] ";
+    case  LogLevel::ERROR:
+        return " [ERROR] ";
+    default:
+        return " [INFO] ";
+    }
 }
